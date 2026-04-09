@@ -11,8 +11,9 @@ from datetime import datetime, timezone
 
 PROJECTS_DIR = Path.home() / ".claude" / "projects"
 XCODE_PROJECTS_DIR = Path.home() / "Library" / "Developer" / "Xcode" / "CodingAssistant" / "ClaudeAgentConfig" / "projects"
+CLAUDE_DESKTOP_DIR = Path.home() / "Library" / "Application Support" / "Claude" / "local-agent-mode-sessions"
 DB_PATH = Path.home() / ".claude" / "usage.db"
-DEFAULT_PROJECTS_DIRS = [PROJECTS_DIR, XCODE_PROJECTS_DIR]
+DEFAULT_PROJECTS_DIRS = [PROJECTS_DIR, XCODE_PROJECTS_DIR, CLAUDE_DESKTOP_DIR]
 
 
 def get_db(db_path=DB_PATH):
@@ -95,11 +96,12 @@ def parse_jsonl_file(filepath):
                 if rtype not in ("assistant", "user"):
                     continue
 
-                session_id = record.get("sessionId")
+                # Support both camelCase (Claude Code) and snake_case (Claude Desktop audit.jsonl)
+                session_id = record.get("sessionId") or record.get("session_id")
                 if not session_id:
                     continue
 
-                timestamp = record.get("timestamp", "")
+                timestamp = record.get("timestamp") or record.get("_audit_timestamp", "")
                 cwd = record.get("cwd", "")
                 git_branch = record.get("gitBranch", "")
 
