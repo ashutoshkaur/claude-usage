@@ -140,3 +140,46 @@ Costs are calculated using **Anthropic API pricing as of April 2026** ([claude.c
 | `scanner.py` | Parses JSONL transcripts, writes to `~/.claude/usage.db` |
 | `dashboard.py` | HTTP server + single-page HTML/JS dashboard |
 | `cli.py` | `scan`, `today`, `stats`, `dashboard` commands |
+
+---
+
+## Troubleshooting
+
+### SQLite Permission Errors
+
+The scanner creates a SQLite database at `~/.claude/usage.db`. If you encounter errors like "unable to open database file" or "database is locked":
+
+```bash
+# Ensure ~/.claude directory exists and is writable
+mkdir -p ~/.claude
+chmod 755 ~/.claude
+
+# If usage.db already exists but isn't writable
+chmod 644 ~/.claude/usage.db
+
+# Verify ownership (should be your user)
+ls -la ~/.claude/
+```
+
+### macOS: Full Disk Access
+
+If the scanner can't read Claude Desktop logs at `~/Library/Application Support/Claude/`, you may need to grant your terminal or IDE full disk access:
+
+1. Open **System Settings** → **Privacy & Security** → **Full Disk Access**
+2. Add your terminal app (Terminal, iTerm2, etc.) or IDE (VS Code, Cursor, etc.)
+3. Restart the terminal/IDE and re-run the scanner
+
+### No Data Showing
+
+If the dashboard shows no data:
+
+1. Verify you have Claude usage logs:
+   ```bash
+   # Claude Code CLI / VS Code
+   ls ~/.claude/projects/
+   
+   # Claude Desktop (macOS)
+   ls ~/Library/Application\ Support/Claude/local-agent-mode-sessions/
+   ```
+2. Run `python3 cli.py scan` manually and check for errors
+3. Ensure the JSONL files contain `assistant` records with `usage` data
