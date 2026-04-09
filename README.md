@@ -21,6 +21,7 @@ Captures usage from:
 - **Claude Code CLI** (`claude` command in terminal)
 - **VS Code extension** (Claude Code sidebar)
 - **Dispatched Code sessions** (sessions routed through Claude Code)
+- **Claude Desktop** (local agent mode sessions on macOS)
 
 **Not captured:**
 - **Cowork sessions** — these run server-side and do not write local JSONL transcripts
@@ -81,6 +82,23 @@ python cli.py scan --projects-dir /path/to/transcripts
 The scanner is incremental — it tracks each file's path and modification time, so re-running `scan` is fast and only processes new or changed files.
 
 By default, the scanner checks both `~/.claude/projects/` and the Xcode Claude integration directory (`~/Library/Developer/Xcode/CodingAssistant/ClaudeAgentConfig/projects/`), skipping any that don't exist. Use `--projects-dir` to scan a custom location instead.
+
+---
+
+## Claude Desktop Support (macOS)
+
+This fork adds support for **Claude Desktop's local agent mode sessions** on macOS.
+
+The scanner automatically checks:
+```
+~/Library/Application Support/Claude/local-agent-mode-sessions/
+```
+
+This directory contains `audit.jsonl` files with the same token usage data as Claude Code. The scanner handles both formats:
+- `sessionId` / `timestamp` (Claude Code)
+- `session_id` / `_audit_timestamp` (Claude Desktop)
+
+No additional configuration needed — just run `python3 cli.py dashboard` and Claude Desktop usage will be included automatically.
 
 ---
 
