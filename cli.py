@@ -273,7 +273,7 @@ def cmd_dashboard(projects_dir=None):
 
     t = threading.Thread(target=open_browser, daemon=True)
     t.start()
-    serve(host=host, port=port)
+    serve(host=host, port=port, skip_initial_scan=True)
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

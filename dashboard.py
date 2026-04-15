@@ -5,6 +5,8 @@ dashboard.py - Local web dashboard served on localhost:8080.
 import json
 import os
 import sqlite3
+import threading
+import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from datetime import datetime
@@ -736,16 +738,73 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
 
-def serve(host=None, port=None):
+# ── Background scanner ─────────────────────────────────────────────────────────
+SCAN_INTERVAL_SECONDS = 300  # 5 minutes
+
+_scanner_thread = None
+_scanner_stop_event = threading.Event()
+
+
+def run_scan():
+    """Run the scanner to update the database."""
+    try:
+        from scanner import scan
+        scan()
+    except Exception as e:
+        print(f"[scanner] Error: {e}")
+
+
+def _background_scanner():
+    """Background thread that runs the scanner periodically."""
+    while not _scanner_stop_event.is_set():
+        _scanner_stop_event.wait(SCAN_INTERVAL_SECONDS)
+        if _scanner_stop_event.is_set():
+            break
+        print(f"[scanner] Running periodic scan...")
+        run_scan()
+        print(f"[scanner] Scan complete.")
+
+
+def start_background_scanner():
+    """Start the background scanner thread."""
+    global _scanner_thread
+    if _scanner_thread is not None and _scanner_thread.is_alive():
+        return
+    _scanner_stop_event.clear()
+    _scanner_thread = threading.Thread(target=_background_scanner, daemon=True)
+    _scanner_thread.start()
+    print(f"[scanner] Background scanner started (interval: {SCAN_INTERVAL_SECONDS}s)")
+
+
+def stop_background_scanner():
+    """Stop the background scanner thread."""
+    _scanner_stop_event.set()
+    if _scanner_thread is not None:
+        _scanner_thread.join(timeout=2)
+
+
+def serve(host=None, port=None, skip_initial_scan=False):
     host = host or os.environ.get("HOST", "localhost")
     port = port or int(os.environ.get("PORT", "8080"))
+
+    # Run initial scan on startup
+    if not skip_initial_scan:
+        print("Running initial scan...")
+        run_scan()
+        print("Initial scan complete.\n")
+
+    # Start background scanner
+    start_background_scanner()
+
     server = HTTPServer((host, port), DashboardHandler)
     print(f"Dashboard running at http://{host}:{port}")
     print("Press Ctrl+C to stop.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nStopped.")
+        print("\nStopping...")
+        stop_background_scanner()
+        print("Stopped.")
 
 
 if __name__ == "__main__":
